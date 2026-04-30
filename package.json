@@ -1,7 +1,7 @@
 {
   "name": "frodigy",
   "version": "1.4.30",
-  "description": "Frodigy offline desktop productivity app",
+  "description": "Frodigy - A Premium Offline Desktop Productivity & Time Management Application",
   "main": "src/main/main.js",
   "scripts": {
     "start": "powershell -Command \"Remove-Item Env:\\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue; & .\\node_modules\\.bin\\electron .\"",
@@ -9,14 +9,16 @@
     "check": "node -e \"console.log('No checks configured yet')\"",
     "rebuild:native": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "npm run rebuild:native",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win --linux",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
+  "keywords": ["productivity", "offline", "journal", "timer", "calendar"],
+  "author": "Saksham Sharma (TheIdealDev) <sharma@saksham.info.np>",
+  "license": "GPL-3.0",
   "type": "commonjs",
   "build": {
-    "appId": "com.frodigy.app",
+    "appId": "com.theidealdev.frodigy",
     "productName": "Frodigy",
     "directories": {
       "output": "dist"
@@ -28,11 +30,23 @@
       ],
       "icon": "build/icons/icon.ico"
     },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icons/512x512.png",
+      "category": "Office"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     }
   },
   "devDependencies": {
