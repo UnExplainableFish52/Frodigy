@@ -1,6 +1,6 @@
 # Frodigy
 
-![Frodigy Banner](./calendar_notes.png)
+![Frodigy Banner](./frodigy_preview.jpg)
 
 **Frodigy** is a beautiful, offline desktop productivity application built on Electron, Node.js, and Vanilla JavaScript. It is designed to act as your personalized, distraction-free command center for modern work sessions.
 
@@ -32,8 +32,8 @@ To run this application locally from the source code:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/UnEliteFish52/frodigy.git
-   cd frodigy
+   git clone https://github.com/UnExplainableFish52/Frodigy.git
+   cd Frodigy
    ```
 2. Install dependencies:
    ```bash
@@ -53,6 +53,3 @@ The resulting executable will be available inside the generated `dist/` director
 
 ## 🔒 Data Privacy
 Because Frodigy is an offline-first desktop application, your task records, calendar notes, and timer statistics *never* leave your local machine. All data is securely persisted inside the `frodigy.db` SQLite database file in the project's root folder.
-
----
-*Created by UnEliteFish52 as a personal productivity ecosystem.*
