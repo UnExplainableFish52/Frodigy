@@ -4,16 +4,25 @@
   "description": "Frodigy - A Premium Offline Desktop Productivity & Time Management Application",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "powershell -Command \"Remove-Item Env:\\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue; & .\\node_modules\\.bin\\electron .\"",
+    "start": "npm run build:renderer && powershell -Command \"Remove-Item Env:\\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue; & .\\node_modules\\.bin\\electron .\"",
     "dev": "npm run start",
-    "check": "node -e \"console.log('No checks configured yet')\"",
+    "dev:renderer": "vite --config vite.config.js",
+    "build:renderer": "vite build --config vite.config.js",
+    "check": "node scripts/check.js && npm run build:renderer",
+    "test:journey": "node scripts/run-journey-tests.js",
     "rebuild:native": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "npm run rebuild:native",
     "dist": "electron-builder --win --linux",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux"
   },
-  "keywords": ["productivity", "offline", "journal", "timer", "calendar"],
+  "keywords": [
+    "productivity",
+    "offline",
+    "journal",
+    "timer",
+    "calendar"
+  ],
   "author": "Saksham Sharma (TheIdealDev) <sharma@saksham.info.np>",
   "license": "GPL-3.0",
   "type": "commonjs",
@@ -23,6 +32,12 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "package.json",
+      "build/icons/**/*",
+      "src/main/**/*",
+      "src/renderer-dist/**/*"
+    ],
     "win": {
       "target": [
         "nsis",
@@ -43,6 +58,11 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "shortcutName": "Frodigy",
+      "uninstallDisplayName": "Frodigy",
+      "installerIcon": "build/icons/icon.ico",
+      "uninstallerIcon": "build/icons/icon.ico",
+      "installerHeaderIcon": "build/icons/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "portable": {
@@ -51,11 +71,23 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.0",
     "electron": "^35.7.5",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^3.4.17",
+    "vite": "^8.0.13"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "better-sqlite3": "^12.8.0",
-    "marked": "^17.0.5"
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "marked": "^17.0.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tailwind-merge": "^3.6.0"
   }
 }

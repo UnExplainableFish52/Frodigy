@@ -33,17 +33,18 @@ async function renderTimers(container) {
 }
 
 function calcRemainingMs(t) {
-  if (t.state === 'idle' || t.state === 'completed') {
+  if (t.state === 'completed') {
+    return 0;
+  }
+  if (t.state === 'idle') {
     return t.duration_seconds * 1000;
   }
   if (t.state === 'running' && t.ends_at) {
     const remaining = new Date(t.ends_at).getTime() - Date.now();
     return Math.max(0, remaining);
   }
-  if (t.state === 'paused' && t.ends_at && t.started_at) {
-    // For paused timers, we store remaining time in ends_at as a future offset
-    // When pausing, we save `ends_at - now` as a duration reference
-    return Math.max(0, t.duration_seconds * 1000);
+  if (t.state === 'paused') {
+    return Math.max(0, (t.remaining_seconds || t.duration_seconds) * 1000);
   }
   return t.duration_seconds * 1000;
 }
@@ -96,18 +97,26 @@ function renderTimerCards() {
       if (timer.state === 'running') {
         // Pause
         timer.state = 'paused';
-        timer.duration_seconds = Math.ceil(timer.remainingMs / 1000);
+        timer.remaining_seconds = Math.ceil(timer.remainingMs / 1000);
         await window.frodigy.invoke('timers:update-state', {
-          timerId, state: 'paused', startedAt: null, endsAt: null
+          timerId,
+          state: 'paused',
+          startedAt: null,
+          endsAt: null,
+          remainingSeconds: timer.remaining_seconds
         });
-        // Update DB duration for proper resume
       } else {
         // Start / Resume
         const endsAt = new Date(Date.now() + timer.remainingMs).toISOString();
         timer.state = 'running';
         timer.ends_at = endsAt;
+        timer.remaining_seconds = Math.ceil(timer.remainingMs / 1000);
         await window.frodigy.invoke('timers:update-state', {
-          timerId, state: 'running', startedAt: new Date().toISOString(), endsAt
+          timerId,
+          state: 'running',
+          startedAt: new Date().toISOString(),
+          endsAt,
+          remainingSeconds: timer.remaining_seconds
         });
       }
       renderTimerCards();
@@ -123,8 +132,13 @@ function renderTimerCards() {
 
       timer.state = 'idle';
       timer.remainingMs = timer.duration_seconds * 1000;
+      timer.remaining_seconds = timer.duration_seconds;
       await window.frodigy.invoke('timers:update-state', {
-        timerId, state: 'idle', startedAt: null, endsAt: null
+        timerId,
+        state: 'idle',
+        startedAt: null,
+        endsAt: null,
+        remainingSeconds: timer.duration_seconds
       });
       renderTimerCards();
     });
@@ -161,11 +175,14 @@ function startTimerTick() {
       if (t.remainingMs <= 0) {
         t.state = 'completed';
         t.remainingMs = 0;
+        t.remaining_seconds = 0;
         needsRedraw = true;
-        // Fire notification
-        window.frodigy.invoke('timers:notify', { timerName: t.name });
         window.frodigy.invoke('timers:update-state', {
-          timerId: t.id, state: 'completed', startedAt: null, endsAt: null
+          timerId: t.id,
+          state: 'completed',
+          startedAt: null,
+          endsAt: null,
+          remainingSeconds: 0
         });
         showTimerFinishedModal(t.id, t.name);
       }
@@ -222,7 +239,7 @@ function showNewTimerModal() {
     if (!name || !mins || mins < 1) return;
 
     const result = await window.frodigy.invoke('timers:create', { name, durationSeconds: mins * 60 });
-    localTimers.push({ ...result, remainingMs: mins * 60 * 1000 });
+    localTimers.push({ ...result, remainingMs: mins * 60 * 1000, remaining_seconds: mins * 60 });
     overlay.remove();
     renderTimerCards();
   };

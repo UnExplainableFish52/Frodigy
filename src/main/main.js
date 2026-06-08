@@ -2,10 +2,15 @@ const path = require('path');
 const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
 const { initializeDatabase, getDatabase } = require('./db');
 const { registerAllHandlers } = require('./ipc-handlers');
+const { applyStartWithWindowsSetting } = require('./startup');
+const { recordAppOpen } = require('./journey-service');
 
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+
+const APP_ID = 'com.theidealdev.frodigy';
+const APP_ICON_PATH = path.join(__dirname, '..', '..', 'build', 'icons', 'icon.ico');
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -16,6 +21,7 @@ function createMainWindow() {
     backgroundColor: '#111115',
     show: false,
     autoHideMenuBar: true,
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -26,7 +32,15 @@ function createMainWindow() {
 
   mainWindow.setMenuBarVisibility(false);
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  const devServerUrl = process.env.FRODIGY_RENDERER_URL;
+  const builtRendererPath = path.join(__dirname, '..', 'renderer-dist', 'index.html');
+  const legacyRendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
+
+  if (devServerUrl) {
+    mainWindow.loadURL(devServerUrl);
+  } else {
+    mainWindow.loadFile(require('fs').existsSync(builtRendererPath) ? builtRendererPath : legacyRendererPath);
+  }
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
@@ -43,8 +57,7 @@ function createMainWindow() {
 }
 
 function createTray() {
-  const trayIconPath = path.join(__dirname, '..', '..', 'calendar_notes.png');
-  let icon = nativeImage.createFromPath(trayIconPath);
+  let icon = nativeImage.createFromPath(APP_ICON_PATH);
 
   if (icon.isEmpty()) {
     icon = nativeImage.createEmpty();
@@ -98,6 +111,10 @@ app.on('before-quit', () => {
   isQuitting = true;
 });
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId(APP_ID);
+}
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -114,6 +131,7 @@ if (!gotTheLock) {
   app.whenReady()
     .then(() => {
       initializeDatabase(app.getPath('userData'));
+      recordAppOpen();
       registerAllHandlers();
 
       // Apply Windows startup setting from DB
@@ -121,10 +139,7 @@ if (!gotTheLock) {
         const db = getDatabase();
         const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get('start_with_windows');
         const shouldAutoStart = row && row.value === 'true';
-        app.setLoginItemSettings({
-          openAtLogin: shouldAutoStart,
-          args: ['--startup']
-        });
+        applyStartWithWindowsSetting(shouldAutoStart);
       } catch (e) {
         // Settings table may not exist yet on first run
       }

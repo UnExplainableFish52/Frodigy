@@ -163,6 +163,7 @@ function renderOneTimeTasks(tasks) {
   list.innerHTML = tasks.map(t => {
     const subtasks = t.subtasks || [];
     const createdDate = t.created_at ? t.created_at.slice(0, 10) : '';
+    const reminderBadge = getTaskReminderBadge(t);
     return `
       <div class="task-item-wrapper">
         <div class="task-item">
@@ -170,8 +171,11 @@ function renderOneTimeTasks(tasks) {
             ${checkSvg().replace('currentColor', 'currentColor')}
           </button>
           <div class="task-info">
-            <div class="task-title">${escapeHtml(t.title)}</div>
-            <div class="task-meta">Started: ${createdDate}</div>
+            <div class="task-title" style="display:flex; align-items:center; gap:8px;">
+              <span style="flex:1">${escapeHtml(t.title)}</span>
+              ${reminderBadge}
+            </div>
+            <div class="task-meta">${formatTaskMeta(t, createdDate)}</div>
           </div>
           <div class="task-actions">
             <button class="task-action-btn" data-delete-id="${t.id}" title="Delete">${trashSvg()}</button>
@@ -247,7 +251,16 @@ function showAddTaskModal(type) {
         <label class="form-label">Recurrence Interval (Days)</label>
         <input class="form-input" id="modal-task-interval" type="number" min="1" max="365" value="1" />
       </div>
-      ` : ''}
+      ` : `
+      <div class="form-group">
+        <label class="form-label">Due Date</label>
+        <input class="form-input" id="modal-task-due-date" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reminder Time</label>
+        <input class="form-input" id="modal-task-reminder-at" type="datetime-local" />
+      </div>
+      `}
       <div class="modal-actions">
         <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
         <button class="btn btn-primary" id="modal-save">Create</button>
@@ -270,7 +283,15 @@ function showAddTaskModal(type) {
       recurrenceRule = (interval && interval > 0) ? interval.toString() : '1';
     }
 
-    await window.frodigy.invoke('tasks:create', { title, type, recurrenceRule });
+    let dueDate = null;
+    let reminderAt = null;
+    if (type === 'one_time') {
+      dueDate = overlay.querySelector('#modal-task-due-date').value || null;
+      const reminderValue = overlay.querySelector('#modal-task-reminder-at').value;
+      reminderAt = reminderValue ? new Date(reminderValue).toISOString() : null;
+    }
+
+    await window.frodigy.invoke('tasks:create', { title, type, recurrenceRule, dueDate, reminderAt });
     overlay.remove();
     refreshDashboard();
   };
@@ -327,4 +348,42 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function formatTaskMeta(task, createdDate) {
+  const parts = [`Started: ${createdDate}`];
+  if (task.due_date) {
+    parts.push(`Due: ${task.due_date}`);
+  }
+  if (task.reminder_at) {
+    parts.push(`Reminder: ${formatTaskDateTime(task.reminder_at)}`);
+  }
+  return parts.map(escapeHtml).join(' · ');
+}
+
+function formatTaskDateTime(isoString) {
+  return new Date(isoString).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function getTaskReminderBadge(task) {
+  const today = formatLocalDateISO(new Date());
+  if (task.reminder_at && !task.reminder_completed_at && new Date(task.reminder_at).getTime() <= Date.now()) {
+    return '<span class="due-badge" style="background:var(--accent-red); color:white;">Reminder sent</span>';
+  }
+  if (task.due_date && task.due_date < today) {
+    return '<span class="due-badge" style="background:var(--accent-red); color:white;">Overdue</span>';
+  }
+  if (task.due_date && task.due_date === today) {
+    return '<span class="due-badge" style="background:var(--accent-primary); color:black;">Due today</span>';
+  }
+  return '';
+}
+
+function formatLocalDateISO(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
