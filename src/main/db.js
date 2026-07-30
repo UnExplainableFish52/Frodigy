@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const fs = require('fs');
 const Database = require('better-sqlite3');
 
 let db = null;
@@ -44,10 +45,43 @@ function initializeDatabase(userDataPath) {
     db = new Database(databasePath);
   }
 
+  databasePath = path.join(userDataPath, 'frodigy.sqlite');
+
+  try {
+    db = new Database(databasePath);
+    const integrity = db.pragma('integrity_check', { simple: true });
+    if (integrity !== 'ok') {
+      throw new Error(`SQLite integrity check failed: ${integrity}`);
+    }
+  } catch (error) {
+    if (db) {
+      try {
+        db.close();
+      } catch (_closeError) {
+        // Continue with recovery even if the damaged handle cannot close cleanly.
+      }
+      db = null;
+    }
+
+    const quarantinedPath = quarantineDatabase(databasePath);
+    dataHealth = {
+      status: 'recovered',
+      message: 'The local database was damaged. Frodigy created a fresh database and preserved the damaged files for recovery.',
+      quarantinedPath
+    };
+    db = new Database(databasePath);
+  }
+
   db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
   db.pragma('foreign_keys = ON');
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS app_meta (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -58,6 +92,10 @@ function initializeDatabase(userDataPath) {
       title TEXT NOT NULL,
       type TEXT NOT NULL CHECK (type IN ('one_time', 'recurring')),
       recurrence_rule TEXT,
+      due_date TEXT,
+      reminder_at TEXT,
+      reminder_completed_at TEXT,
+      reminder_last_notified_at TEXT,
       due_date TEXT,
       reminder_at TEXT,
       reminder_completed_at TEXT,
@@ -86,6 +124,7 @@ function initializeDatabase(userDataPath) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       duration_seconds INTEGER NOT NULL,
+      remaining_seconds INTEGER,
       remaining_seconds INTEGER,
       state TEXT NOT NULL CHECK (state IN ('idle', 'running', 'paused', 'completed')),
       started_at TEXT,
@@ -237,6 +276,36 @@ function ensureColumn(database, tableName, columnName, columnDefinition) {
   database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
 }
 
+function quarantineDatabase(filePath) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const quarantineBase = `${filePath}.corrupt-${timestamp}`;
+  let preserved = null;
+
+  for (const suffix of ['', '-wal', '-shm']) {
+    const source = `${filePath}${suffix}`;
+    if (!fs.existsSync(source)) {
+      continue;
+    }
+
+    const target = `${quarantineBase}${suffix}`;
+    fs.renameSync(source, target);
+    if (!suffix) {
+      preserved = target;
+    }
+  }
+
+  return preserved;
+}
+
+function ensureColumn(database, tableName, columnName, columnDefinition) {
+  const columns = database.prepare(`PRAGMA table_info(${tableName})`).all();
+  if (columns.some(column => column.name === columnName)) {
+    return;
+  }
+
+  database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
+}
+
 function getDatabase() {
   if (!db) {
     throw new Error('Database has not been initialized yet.');
@@ -261,10 +330,31 @@ function closeDatabase() {
   db = null;
 }
 
+function getDatabasePath() {
+  return databasePath;
+}
+
+function getDataHealth() {
+  return { ...dataHealth };
+}
+
+function closeDatabase() {
+  if (!db) {
+    return;
+  }
+  db.close();
+  db = null;
+}
+
 module.exports = {
   SCHEMA_VERSION,
   closeDatabase,
+  SCHEMA_VERSION,
+  closeDatabase,
   initializeDatabase,
+  getDatabase,
+  getDatabasePath,
+  getDataHealth
   getDatabase,
   getDatabasePath,
   getDataHealth

@@ -5,6 +5,7 @@ const https = require('https');
 const { pathToFileURL } = require('url');
 
 const GITHUB_REPO = 'UnExplainableFish52/Frodigy';
+const GITHUB_REPO = 'UnExplainableFish52/Frodigy';
 const CURRENT_VERSION = require('../../package.json').version;
 const { getDatabase } = require('./db');
 const { applyStartWithWindowsSetting, getStartWithWindowsSetting } = require('./startup');
@@ -39,6 +40,8 @@ const PROFILE_AVATAR_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.g
 const MAX_PROFILE_AVATAR_BYTES = 10 * 1024 * 1024;
 
 function todayISO() {
+  const today = new Date();
+  return formatLocalDate(today);
   const today = new Date();
   return formatLocalDate(today);
 }
@@ -246,6 +249,9 @@ function registerAllHandlers() {
         (title, type, recurrence_rule, due_date, reminder_at, created_at, created_date, is_completed)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
     );
+    const timestamp = nowISO();
+    const result = stmt.run(title, type, recurrenceRule || null, dueDate || null, reminderAt || null, timestamp, todayISO());
+    return { id: result.lastInsertRowid, title, type, recurrenceRule, dueDate, reminderAt };
     const timestamp = nowISO();
     const result = stmt.run(title, type, recurrenceRule || null, dueDate || null, reminderAt || null, timestamp, todayISO());
     return { id: result.lastInsertRowid, title, type, recurrenceRule, dueDate, reminderAt };

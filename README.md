@@ -1,6 +1,7 @@
 # Frodigy
 
-![Frodigy Banner](./frodigy_preview.jpg)
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/4fbf15d6-e31f-433d-bdc2-5996347e86a5" />
+
 
 **Frodigy** is a beautiful, offline desktop productivity application built on Electron, Node.js, and Vanilla JavaScript. It is designed to act as your personalized, distraction-free command center for modern work sessions.
 

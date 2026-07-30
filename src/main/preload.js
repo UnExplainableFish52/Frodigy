@@ -74,6 +74,7 @@ function sanitizeMarkdownHtml(html) {
 
 contextBridge.exposeInMainWorld('markdown', {
   parse: (text) => sanitizeMarkdownHtml(marked.parse(text))
+  parse: (text) => sanitizeMarkdownHtml(marked.parse(text))
 });
 
 contextBridge.exposeInMainWorld('frodigy', {
@@ -84,7 +85,16 @@ contextBridge.exposeInMainWorld('frodigy', {
     }
     return ipcRenderer.invoke(channel, ...args);
   },
+  invoke: (channel, ...args) => {
+    if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
+      return Promise.reject(new Error(`IPC channel is not allowed: ${channel}`));
+    }
+    return ipcRenderer.invoke(channel, ...args);
+  },
   on: (channel, callback) => {
+    if (!ALLOWED_EVENT_CHANNELS.has(channel)) {
+      throw new Error(`IPC event channel is not allowed: ${channel}`);
+    }
     if (!ALLOWED_EVENT_CHANNELS.has(channel)) {
       throw new Error(`IPC event channel is not allowed: ${channel}`);
     }
