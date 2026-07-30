@@ -2,7 +2,7 @@
 // Settings Page
 // ═══════════════════════════════════════════════════════════
 
-const GITHUB_RELEASES_URL = 'https://github.com/UnEliteFish52/frodigy/releases';
+const GITHUB_RELEASES_URL = 'https://github.com/UnExplainableFish52/Frodigy/releases';
 
 const THEMES = [
   { id: 'neon_abyss', label: 'Amber Abyss', desc: 'Warm charcoal with amber & sage accents' },

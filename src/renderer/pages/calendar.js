@@ -15,6 +15,7 @@ let calState = {
   zoomLevel: 1,
   mode: 'edit',
   isFullscreen: false,
+  weekendMode: 'saturday',
 };
 
 // eslint-disable-next-line no-unused-vars
@@ -23,6 +24,7 @@ async function renderCalendar(container) {
   if (!calState.selectedDate) {
     calState.selectedDate = formatDateISO(today);
   }
+  calState.weekendMode = await window.frodigy.invoke('settings:get', { key: 'weekend_mode' }) || 'saturday';
 
   container.innerHTML = `
     <div class="page-header">
@@ -165,7 +167,7 @@ async function rebuildCalGrid() {
   const daysInMonth = new Date(calState.year, calState.month + 1, 0).getDate();
 
   let html = DAY_HEADERS.map((d, i) => {
-    const isWeekendHeader = (i === 0 || i === 6); // SU=0, SA=6
+    const isWeekendHeader = isWeekendDay(i, calState.weekendMode);
     return `<div class="cal-header-cell${isWeekendHeader ? ' weekend-header' : ''}">${d}</div>`;
   }).join('');
 
@@ -181,7 +183,7 @@ async function rebuildCalGrid() {
     const dow = new Date(calState.year, calState.month, day).getDay();
     const isToday = dateISO === todayISO;
     const isSelected = dateISO === calState.selectedDate;
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend = isWeekendDay(dow, calState.weekendMode);
     const isBoldDay = dow >= 1 && dow <= 5; // Mon-Fri bold
 
     let classes = 'cal-day';
@@ -253,6 +255,14 @@ function formatDateDisplay(dateStr) {
   const parts = dateStr.split('-');
   const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function isWeekendDay(dayOfWeek, weekendMode) {
+  if (weekendMode === 'saturday_sunday') {
+    return dayOfWeek === 0 || dayOfWeek === 6;
+  }
+
+  return dayOfWeek === 6;
 }
 
 function escapeHtmlCal(str) {

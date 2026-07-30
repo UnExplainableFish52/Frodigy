@@ -4,7 +4,7 @@
 
 // eslint-disable-next-line no-unused-vars
 async function renderAbout(container) {
-  const version = window.frodigy?.version || '1.4.30';
+  const version = window.frodigy?.version || '1.6.13';
 
   container.innerHTML = `
     <!-- ═══ Hero Section ═══ -->

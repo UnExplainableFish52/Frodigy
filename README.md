@@ -9,14 +9,17 @@
 - **Dashboard**: Track your daily routines and outstanding one-time tasks.
   - Custom-interval recurring tasks that auto-refresh based on your habits.
   - Subtask support for larger projects.
+  - Optional due dates and reminder times for important one-time tasks.
 - **Calendar & Daily Notes**: Never miss a beat with a visual calendar grid hooked up to an offline memory system.
   - Distraction-free full-screen editor mode (`⤢`).
-  - Secure offline `.md` parsing using `marked.js` with A-/A+ accessibility zoom features.
+  - Sanitized offline `.md` preview using `marked.js` with A-/A+ accessibility zoom features.
 - **Advanced Timers**: Keep yourself accountable with custom multi-timers based on the native Web Audio API.
   - "Sticky" un-ignorable popup modals that force you to manually dismiss alarms.
   - Seamless fallback mechanisms for custom user audio (place a `custom-alarm.mp3` in the app directory for personalized sounds!).
-- **Statistics & Summaries**: Your very own productivity tracker automatically logging completed tasks and historical focus sessions.
-- **Dynamic Themes**: Fully equipped design system with easy switching between Neon Abyss, Royal Indigo, and High Contrast.
+- **Statistics & Summaries**: Your very own productivity tracker for completed tasks, focus sessions, structured activity logs, and progress history.
+- **Journey Dashboard**: A personal greeting, inclusive life-day number, today's due routines, current projects, and local consistency tracking.
+- **Local Backup & Restore**: Human-readable JSON exports, manual local backups, validated replace-only restore, and an automatic safety backup before import.
+- **Dynamic Themes**: Fully equipped design system with easy switching between Amber Abyss, Warm Light, and High Contrast.
 
 ## 🛠️ Technologies Used
 
@@ -52,4 +55,6 @@ npm run dist
 The resulting executable will be available inside the generated `dist/` directory.
 
 ## 🔒 Data Privacy
-Because Frodigy is an offline-first desktop application, your task records, calendar notes, and timer statistics *never* leave your local machine. All data is securely persisted inside the `frodigy.db` SQLite database file in the project's root folder.
+Because Frodigy is an offline-first desktop application, your task records, calendar notes, and timer statistics *never* leave your local machine. All data is securely persisted in Electron's local `userData` directory as `frodigy.sqlite`.
+
+The Settings page shows the exact database and backup-folder locations. Manual backups contain all user-created Frodigy data and settings in a versioned JSON document. Import is replace-only: Frodigy validates the selected backup, warns before replacement, and creates a safety backup of the current data first. SQLite integrity is checked during startup; damaged database files are preserved with a `.corrupt-*` suffix before a fresh local database is created.
